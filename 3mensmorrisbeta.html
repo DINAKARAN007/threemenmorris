@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Three Men's Morris</title>
+    <title>Three Men's Morris (Hard Version)</title>
 
     <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-3WSV6HLD3S"></script>
@@ -445,11 +445,38 @@
                        (fromCol === toCol && Math.abs(fromRow - toRow) === 1);
             }
 
+            // *** NEW FUNCTION: CHECKS IF A PLAYER CAN MOVE ***
+            function hasAvailableMoves(player) {
+                if (stonesPlaced < 6) return true;
+                const playerStones = boardState.map((val, idx) => (val === player ? idx : null)).filter(val => val !== null);
+                for (const from of playerStones) {
+                    for (let to = 0; to < 9; to++) {
+                        if (boardState[to] === 0 && isAdjacent(from, to)) {
+                            return true; // Found a valid move
+                        }
+                    }
+                }
+                return false; // No moves available
+            }
+
+            // *** UPDATED FUNCTION: CHECKS FOR BLOCKED PLAYER ***
             function switchPlayer() {
                 currentPlayer = (currentPlayer === 1) ? 2 : 1;
+
+                if (stonesPlaced >= 6 && !hasAvailableMoves(currentPlayer)) {
+                    isGameActive = false;
+                    const winnerPlayer = (currentPlayer === 1) ? 2 : 1;
+                    currentPlayer = winnerPlayer;
+                    const winnerName = (currentPlayer === 1) ? (isBotActive ? 'Bot' : 'Black') : 'Red';
+                    updateStatus(`${winnerName} wins! Opponent is blocked.`);
+                    setTimeout(handleRoundWin, 2000);
+                    return;
+                }
+
                 const playerName = (currentPlayer === 1) ? (isBotActive ? 'Bot' : 'Black') : 'Red';
                 const action = (stonesPlaced < 6) ? 'Place' : 'Move';
                 updateStatus(`Player ${playerName} to ${action}`);
+                
                 if (isBotActive && currentPlayer === 1 && isGameActive) {
                     setTimeout(makeBotMove, 1000);
                 }
@@ -479,124 +506,144 @@
             }
             
             // ===============================================
-            // +++ NEW ADVANCED BOT LOGIC STARTS HERE +++
+            // +++ NEW HARD LEVEL BOT LOGIC STARTS HERE (MINIMAX) +++
             // ===============================================
             function makeBotMove() {
                 if (!isGameActive) return;
-                if (stonesPlaced < 6) {
-                    placeStone(findBestPlacement());
-                } else {
-                    const { from, to } = findBestMove();
-                    if (from !== undefined && to !== undefined) {
-                        boardState[to] = currentPlayer;
-                        boardState[from] = 0;
-                        updateBoardUI();
-                        if (checkWin()) { handleRoundWin(); return; }
-                        switchPlayer();
-                    }
-                }
-            }
-
-            function findBestPlacement() {
-                const emptySpots = boardState.map((val, idx) => (val === 0 ? idx : null)).filter(val => val !== null);
-
-                // 1. Win: Check if the bot can win in the next move
-                for (const spot of emptySpots) {
-                    const tempBoard = [...boardState]; tempBoard[spot] = 1; // Bot is player 1
-                    if (winPatterns.some(p => p.every(i => tempBoard[i] === 1))) {
-                        return spot;
-                    }
-                }
-
-                // 2. Block: Check if the player can win, and block them
-                for (const spot of emptySpots) {
-                    const tempBoard = [...boardState]; tempBoard[spot] = 2; // Player is player 2
-                    if (winPatterns.some(p => p.every(i => tempBoard[i] === 2))) {
-                        return spot;
-                    }
-                }
-
-                // 3. Take Center: The center is the most strategic spot
-                if (boardState[4] === 0) {
-                    return 4;
-                }
                 
-                // 4. Take a Corner: Corners are better than edges
-                const corners = [0, 2, 6, 8].filter(i => boardState[i] === 0);
-                if (corners.length > 0) {
-                    return corners[Math.floor(Math.random() * corners.length)];
-                }
-
-                // 5. Fallback: Take any remaining spot
-                return emptySpots[Math.floor(Math.random() * emptySpots.length)];
-            }
-
-            function findBestMove() {
-                const botStones = boardState.map((val, idx) => (val === 1 ? idx : null)).filter(val => val !== null);
-                const possibleMoves = [];
-                
-                // Generate all possible moves for the bot
-                for (const from of botStones) {
-                    for (let to = 0; to < 9; to++) {
-                        if (boardState[to] === 0 && isAdjacent(from, to)) {
-                            possibleMoves.push({ from, to });
+                setTimeout(() => {
+                    const bestMove = findBestMoveWithMinimax();
+                    if (stonesPlaced < 6) {
+                        if (bestMove.index !== undefined) {
+                            placeStone(bestMove.index);
+                        }
+                    } else {
+                        if (bestMove.from !== undefined && bestMove.to !== undefined) {
+                            boardState[bestMove.to] = 1;
+                            boardState[bestMove.from] = 0;
+                            updateBoardUI();
+                            if (checkWin()) {
+                                handleRoundWin();
+                                return;
+                            }
+                            switchPlayer();
                         }
                     }
-                }
+                }, 500);
+            }
 
-                if (possibleMoves.length === 0) return {};
-
-                // 1. Find a winning move
-                for (const move of possibleMoves) {
-                    const tempBoard = [...boardState];
-                    tempBoard[move.to] = 1; 
-                    tempBoard[move.from] = 0;
-                    if (winPatterns.some(p => p.every(i => tempBoard[i] === 1))) {
-                        return move;
-                    }
-                }
-
-                // 2. Find a move to block the opponent's win
-                const opponentThreats = [];
+            function evaluate(board) {
                 for (const pattern of winPatterns) {
-                    const values = pattern.map(i => boardState[i]);
-                    // If player has two stones and the third spot is empty, it's a threat
-                    if (values.filter(v => v === 2).length === 2 && values.filter(v => v === 0).length === 1) {
-                        const emptySpot = pattern.find(i => boardState[i] === 0);
-                        opponentThreats.push(emptySpot);
+                    const [a, b, c] = pattern;
+                    if (board[a] && board[a] === board[b] && board[a] === board[c]) {
+                        return board[a] === 1 ? 10 : -10;
+                    }
+                }
+                return 0;
+            }
+
+            function minimax(board, depth, isMaximizing) {
+                const score = evaluate(board);
+                if (score === 10) return score - depth;
+                if (score === -10) return score + depth;
+
+                const emptySpots = board.map((val, idx) => val === 0 ? idx : null).filter(val => val !== null).length;
+                if (emptySpots === 0 && stonesPlaced < 6) return 0;
+                
+                // *** Minimax now also checks if a player is blocked ***
+                if (stonesPlaced >= 6) {
+                    if (!hasAvailableMoves(isMaximizing ? 1 : 2)) {
+                        return isMaximizing ? -10 + depth : 10 - depth;
                     }
                 }
 
-                if (opponentThreats.length > 0) {
-                    const blockingSpot = opponentThreats[0]; // The spot the bot needs to move to
-                    // Find a bot move that lands on the blocking spot
-                    for (const move of possibleMoves) {
-                        if (move.to === blockingSpot) {
-                            return move;
+                if (isMaximizing) { // Bot's turn
+                    let best = -Infinity;
+                    if (stonesPlaced < 6) {
+                        for (let i = 0; i < 9; i++) {
+                            if (board[i] === 0) {
+                                board[i] = 1;
+                                best = Math.max(best, minimax([...board], depth + 1, !isMaximizing));
+                                board[i] = 0;
+                            }
+                        }
+                    } else {
+                        const botStones = board.map((val, idx) => (val === 1 ? idx : null)).filter(val => val !== null);
+                        for(const from of botStones){
+                            for(let to = 0; to < 9; to++){
+                                if(board[to] === 0 && isAdjacent(from, to)){
+                                    board[to] = 1; board[from] = 0;
+                                    best = Math.max(best, minimax([...board], depth + 1, !isMaximizing));
+                                    board[from] = 1; board[to] = 0;
+                                }
+                            }
                         }
                     }
-                }
-
-                // 3. Create a threat (a two-in-a-row)
-                for (const move of possibleMoves) {
-                    const tempBoard = [...boardState];
-                    tempBoard[move.to] = 1;
-                    tempBoard[move.from] = 0;
-                    // Check if this move creates a new threat for the bot
-                    for (const pattern of winPatterns) {
-                        if (!pattern.includes(move.to)) continue; // Check only patterns involving the new move
-                        const values = pattern.map(i => tempBoard[i]);
-                        if (values.filter(v => v === 1).length === 2 && values.filter(v => v === 0).length === 1) {
-                            return move;
+                    return best;
+                } else { // Player's turn
+                    let best = Infinity;
+                     if (stonesPlaced < 6) {
+                        for (let i = 0; i < 9; i++) {
+                            if (board[i] === 0) {
+                                board[i] = 2;
+                                best = Math.min(best, minimax([...board], depth + 1, !isMaximizing));
+                                board[i] = 0;
+                            }
+                        }
+                    } else {
+                        const playerStones = board.map((val, idx) => (val === 2 ? idx : null)).filter(val => val !== null);
+                        for(const from of playerStones){
+                            for(let to = 0; to < 9; to++){
+                                if(board[to] === 0 && isAdjacent(from, to)){
+                                    board[to] = 2; board[from] = 0;
+                                    best = Math.min(best, minimax([...board], depth + 1, !isMaximizing));
+                                    board[from] = 2; board[to] = 0;
+                                }
+                            }
                         }
                     }
+                    return best;
                 }
+            }
+            
+            function findBestMoveWithMinimax() {
+                let bestVal = -Infinity;
 
-                // 4. Fallback: If no strategic move, make a random valid move
-                return possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+                if (stonesPlaced < 6) {
+                    let bestMoveIndex = -1;
+                    for (let i = 0; i < 9; i++) {
+                        if (boardState[i] === 0) {
+                            boardState[i] = 1;
+                            let moveVal = minimax([...boardState], 0, false);
+                            boardState[i] = 0;
+                            if (moveVal > bestVal) {
+                                bestMoveIndex = i;
+                                bestVal = moveVal;
+                            }
+                        }
+                    }
+                    return { index: bestMoveIndex };
+                } else {
+                    let bestMove = {};
+                    const botStones = boardState.map((val, idx) => (val === 1 ? idx : null)).filter(val => val !== null);
+                    for (const from of botStones) {
+                        for (let to = 0; to < 9; to++) {
+                            if (boardState[to] === 0 && isAdjacent(from, to)) {
+                                boardState[to] = 1; boardState[from] = 0;
+                                let moveVal = minimax([...boardState], 0, false);
+                                boardState[from] = 1; boardState[to] = 0;
+                                if (moveVal > bestVal) {
+                                    bestVal = moveVal;
+                                    bestMove = { from, to };
+                                }
+                            }
+                        }
+                    }
+                    return bestMove;
+                }
             }
             // ===============================================
-            // +++ NEW ADVANCED BOT LOGIC ENDS HERE +++
+            // +++ HARD LEVEL BOT LOGIC ENDS HERE +++
             // ===============================================
             
             // Helper functions and event listeners
