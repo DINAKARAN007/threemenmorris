@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="ta">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three Men's Morris</title>
+    <style>
+        /* விளையாட்டுக்கான CSS ஸ்டைல்கள் */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #eef2f7;
+            margin: 0;
+            overflow: hidden; 
+        }
+
+        .game-container {
+            text-align: center;
+            background-color: white;
+            padding: 20px 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 5;
+        }
+
+        /* --- புதியது: தலைப்புக்கான இணைப்பு ஸ்டைல்கள் --- */
+        #title-link {
+            text-decoration: none; /* அடிக்கோட்டை நீக்குதல் */
+            color: inherit; /* இயல்பான கருப்பு நிறம் */
+            cursor: pointer;
+        }
+        
+        h1 {
+            margin-bottom: 20px;
+        }
+        
+        .settings-container {
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        #winning-score-input {
+            width: 60px;
+            padding: 8px;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+            font-size: 18px;
+            text-align: center;
+            font-weight: bold;
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        #winning-score-input::-webkit-outer-spin-button,
+        #winning-score-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .score-control {
+            width: 35px;
+            height: 35px;
+            border: 2px solid #ccc;
+            background-color: #f0f0f0;
+            border-radius: 50%;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-bottom: 4px; 
+        }
+        .score-control:disabled {
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        
+        .scoreboard-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .player-score {
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+        #black-player-score {
+            background-color: #f0f0f0;
+            border-left: 5px solid black;
+        }
+        #red-player-score {
+            background-color: #f0f0f0;
+            border-left: 5px solid #d92121;
+        }
+
+        .board-container {
+            position: relative;
+            width: 360px;
+            height: 360px;
+            margin: 20px auto;
+        }
+
+        #board-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+
+        .points-grid {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            z-index: 2;
+        }
+
+        .point { cursor: pointer; }
+        
+        .stone {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            transform: translate(-50%, -50%); 
+            z-index: 3;
+            pointer-events: none;
+        }
+
+        .black { background-color: #000000; }
+        .red { background-color: #d92121; }
+        
+        .stone.selected { box-shadow: 0 0 15px 5px #007bff; }
+
+        #status {
+            font-size: 24px;
+            margin-top: 20px;
+            height: 30px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .buttons-container {
+            margin-top: 20px;
+        }
+
+        .game-button {
+            padding: 12px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            color: white;
+            margin: 0 10px;
+        }
+        
+        #newMatchButton { background-color: #4CAF50; }
+
+        #victory-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.75);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease-in-out;
+        }
+
+        #victory-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .victory-content {
+            text-align: center;
+            color: white;
+            transform: scale(0.5);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) 0.3s;
+        }
+
+        #victory-overlay.visible .victory-content {
+            transform: scale(1);
+            opacity: 1;
+        }
+        
+        .trophy {
+            font-size: 150px;
+            line-height: 1;
+        }
+        
+        #victory-overlay.visible .trophy {
+             animation: trophy-animation 1s ease-out forwards;
+        }
+
+        #winner-message {
+            font-size: 3em;
+            margin: 20px 0;
+            text-shadow: 0 0 15px gold;
+        }
+        
+        #countdown-message {
+            font-size: 1.2em;
+            margin-top: 20px;
+            color: #f0f0f0;
+        }
+
+        @keyframes trophy-animation {
+            0% { transform: translateY(100px) scale(0.5) rotate(-30deg); opacity: 0; }
+            60% { transform: translateY(-20px) scale(1.1) rotate(10deg); opacity: 1; }
+            100% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        
+        <!-- --- மாற்றம்: தலைப்பு இப்போது ஒரு இணைப்பு --- -->
+        <a href="#" id="title-link">
+            <h1>Three Men's Morris</h1>
+        </a>
+
+        <div class="settings-container">
+            <label for="winning-score-input">Winning Score:</label>
+            <button id="decrease-score" class="score-control">-</button>
+            <input type="number" id="winning-score-input" value="10" min="1">
+            <button id="increase-score" class="score-control">+</button>
+        </div>
+        
+        <div class="scoreboard-container">
+            <div id="black-player-score" class="player-score">
+                Black: <span id="black-score">0</span>
+            </div>
+            <div id="red-player-score" class="player-score">
+                Red: <span id="red-score">0</span>
+            </div>
+        </div>
+        
+        <div id="board-container" class="board-container">
+            <canvas id="board-lines" width="360" height="360"></canvas>
+            <div id="points-grid" class="points-grid"></div>
+            <div id="stones-container"></div>
+        </div>
+        <div id="status"></div>
+        <div class="buttons-container">
+             <button id="newMatchButton" class="game-button">New Game</button>
+        </div>
+    </div>
+
+    <div id="victory-overlay">
+        <div class="victory-content">
+            <div class="trophy">🏆</div>
+            <h2 id="winner-message"></h2>
+            <p id="countdown-message"></p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // DOM Elements
+            const titleLink = document.getElementById('title-link'); // --- மாற்றம் ---
+            const winningScoreInput = document.getElementById('winning-score-input');
+            const decreaseScoreButton = document.getElementById('decrease-score');
+            const increaseScoreButton = document.getElementById('increase-score');
+            const pointsGrid = document.getElementById('points-grid');
+            const stonesContainer = document.getElementById('stones-container');
+            const statusElement = document.getElementById('status');
+            const newMatchButton = document.getElementById('newMatchButton');
+            const blackScoreElement = document.getElementById('black-score');
+            const redScoreElement = document.getElementById('red-score');
+            const canvas = document.getElementById('board-lines');
+            const ctx = canvas.getContext('2d');
+            const victoryOverlay = document.getElementById('victory-overlay');
+            const winnerMessage = document.getElementById('winner-message');
+            const countdownMessage = document.getElementById('countdown-message');
+
+            const BOARD_SIZE = 360; 
+
+            let blackScore = 0, redScore = 0, winningScore = 10;
+            let roundStarter = 1;
+            let currentPlayer, boardState, stonesPlaced, selectedStoneIndex, isGameActive;
+            let gameResetTimer = null;
+
+            const winPatterns = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8],
+                [0, 3, 6], [1, 4, 7], [2, 5, 8]
+            ];
+
+            function toggleScoreControls(enabled) {
+                winningScoreInput.disabled = !enabled;
+                decreaseScoreButton.disabled = !enabled;
+                increaseScoreButton.disabled = !enabled;
+            }
+
+            function initializeRound() {
+                currentPlayer = roundStarter; 
+                boardState = Array(9).fill(0);
+                stonesPlaced = 0;
+                selectedStoneIndex = -1;
+                isGameActive = true;
+                
+                toggleScoreControls(false);
+
+                const startingPlayerName = (currentPlayer === 1) ? 'Black' : 'Red';
+                updateStatus(`Player ${currentPlayer} (${startingPlayerName}) to Place`);
+                
+                updateBoardUI();
+            }
+            
+            function startNewMatch() {
+                if(gameResetTimer) clearInterval(gameResetTimer);
+
+                winningScore = parseInt(winningScoreInput.value);
+                if (isNaN(winningScore) || winningScore < 1) {
+                    winningScore = 10;
+                    winningScoreInput.value = 10;
+                }
+                
+                blackScore = 0;
+                redScore = 0;
+                roundStarter = 1;
+                updateScoreboard();
+                
+                victoryOverlay.classList.remove('visible');
+                initializeRound();
+            }
+
+            function setupInitialState() {
+                blackScore = 0;
+                redScore = 0;
+                updateScoreboard();
+                drawBoardLines();
+                createClickPoints();
+                boardState = Array(9).fill(0);
+                updateBoardUI();
+                toggleScoreControls(true);
+                updateStatus('Set winning score and start a new game!');
+            }
+            
+            function updateScoreboard() {
+                blackScoreElement.textContent = blackScore;
+                redScoreElement.textContent = redScore;
+            }
+
+            function drawBoardLines() {
+                const size = BOARD_SIZE;
+                const padding = size * 0.06;
+                const innerSize = size - (padding * 2);
+                ctx.clearRect(0, 0, size, size);
+                ctx.strokeStyle = '#555';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(padding, padding, innerSize, innerSize);
+                ctx.beginPath();
+                ctx.moveTo(size / 2, padding);
+                ctx.lineTo(size / 2, size - padding);
+                ctx.moveTo(padding, size / 2);
+                ctx.lineTo(size - padding, size / 2);
+                ctx.stroke();
+            }
+
+            function createClickPoints() {
+                pointsGrid.innerHTML = '';
+                for (let i = 0; i < 9; i++) {
+                    const point = document.createElement('div');
+                    point.classList.add('point');
+                    point.dataset.index = i;
+                    point.addEventListener('click', handlePointClick);
+                    pointsGrid.appendChild(point);
+                }
+            }
+            
+            function handlePointClick(event) {
+                if (!isGameActive) return;
+                const clickedIndex = parseInt(event.currentTarget.dataset.index);
+
+                if (stonesPlaced < 6) {
+                    if (boardState[clickedIndex] === 0) placeStone(clickedIndex);
+                } else {
+                    handleMove(clickedIndex);
+                }
+            }
+
+            function placeStone(index) {
+                boardState[index] = currentPlayer;
+                stonesPlaced++;
+                updateBoardUI();
+
+                if (checkWin()) {
+                    handleRoundWin();
+                    return;
+                }
+
+                switchPlayer();
+                if (stonesPlaced < 6) {
+                    updateStatus(`Player ${currentPlayer === 1 ? 'Black' : 'Red'} to Place`);
+                } else {
+                    updateStatus(`Player ${currentPlayer === 1 ? 'Black' : 'Red'} to Move`);
+                }
+            }
+
+            function handleMove(index) {
+                if (selectedStoneIndex === -1) {
+                    if (boardState[index] === currentPlayer) {
+                        selectedStoneIndex = index;
+                        updateBoardUI();
+                        updateStatus('Select an empty adjacent spot');
+                    }
+                } else {
+                    if (boardState[index] === 0 && isAdjacent(selectedStoneIndex, index)) {
+                        boardState[index] = currentPlayer;
+                        boardState[selectedStoneIndex] = 0;
+                        selectedStoneIndex = -1;
+                        updateBoardUI();
+
+                        if (checkWin()) {
+                            handleRoundWin();
+                            return;
+                        }
+
+                        switchPlayer();
+                        updateStatus(`Player ${currentPlayer === 1 ? 'Black' : 'Red'} to Move`);
+                    } else {
+                        selectedStoneIndex = -1;
+                        updateBoardUI();
+                        updateStatus(`Player ${currentPlayer === 1 ? 'Black' : 'Red'} to Move`);
+                    }
+                }
+            }
+
+            function handleRoundWin() {
+                isGameActive = false;
+                const winnerName = currentPlayer === 1 ? 'Black' : 'Red';
+                
+                if (currentPlayer === 1) {
+                    blackScore++;
+                } else {
+                    redScore++;
+                }
+                updateScoreboard();
+                
+                roundStarter = currentPlayer;
+
+                if (blackScore >= winningScore || redScore >= winningScore) {
+                    showVictoryCelebration(winnerName);
+                } else {
+                    updateStatus(`${winnerName} wins the round!`);
+                    setTimeout(() => {
+                        initializeRound();
+                    }, 2000);
+                }
+            }
+
+            function showVictoryCelebration(winnerName) {
+                winnerMessage.textContent = `${winnerName.toUpperCase()} IS THE GRAND WINNER!`;
+                victoryOverlay.classList.add('visible');
+                toggleScoreControls(true);
+
+                const duration = 3 * 1000;
+                const end = Date.now() + duration;
+
+                (function frame() {
+                    if (Date.now() > end) return;
+                    confetti({ particleCount: 2, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#000000', '#d92121', '#ffffff'] });
+                    confetti({ particleCount: 2, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#000000', '#d92121', '#ffffff'] });
+                    requestAnimationFrame(frame);
+                }());
+
+                let countdown = 5;
+                countdownMessage.textContent = `New game starts in ${countdown}...`;
+                
+                gameResetTimer = setInterval(() => {
+                    countdown--;
+                    if (countdown > 0) {
+                        countdownMessage.textContent = `New game starts in ${countdown}...`;
+                    } else {
+                        countdownMessage.textContent = `Starting...`;
+                        clearInterval(gameResetTimer);
+                        startNewMatch();
+                    }
+                }, 1000);
+            }
+            
+            function isAdjacent(from, to) {
+                const fromRow = Math.floor(from / 3);
+                const fromCol = from % 3;
+                const toRow = Math.floor(to / 3);
+                const toCol = to % 3;
+                
+                return (fromRow === toRow && Math.abs(fromCol - toCol) === 1) ||
+                       (fromCol === toCol && Math.abs(fromRow - toRow) === 1);
+            }
+
+            function switchPlayer() {
+                currentPlayer = currentPlayer === 1 ? 2 : 1;
+            }
+
+            function checkWin() {
+                return winPatterns.some(pattern => pattern.every(index => boardState[index] === currentPlayer));
+            }
+
+            function updateBoardUI() {
+                stonesContainer.innerHTML = '';
+                boardState.forEach((player, index) => {
+                    if (player !== 0) {
+                        const stone = document.createElement('div');
+                        stone.classList.add('stone');
+                        stone.classList.add(player === 1 ? 'black' : 'red');
+                        if (index === selectedStoneIndex) stone.classList.add('selected');
+                        const row = Math.floor(index / 3);
+                        const col = index % 3;
+                        const padding = BOARD_SIZE * 0.06;
+                        const step = (BOARD_SIZE - 2 * padding) / 2;
+                        stone.style.left = `${padding + col * step}px`;
+                        stone.style.top = `${padding + row * step}px`;
+                        stonesContainer.appendChild(stone);
+                    }
+                });
+            }
+            
+            function updateStatus(message) { statusElement.textContent = message; }
+            
+            // --- மாற்றம்: தலைப்பைக் கிளிக் செய்தால் ரீஃப்ரெஷ் செய்தல் ---
+            titleLink.addEventListener('click', (event) => {
+                event.preventDefault();
+                location.reload();
+            });
+
+            decreaseScoreButton.addEventListener('click', () => {
+                let currentValue = parseInt(winningScoreInput.value);
+                if (currentValue > 1) {
+                    winningScoreInput.value = currentValue - 1;
+                }
+            });
+
+            increaseScoreButton.addEventListener('click', () => {
+                let currentValue = parseInt(winningScoreInput.value);
+                winningScoreInput.value = currentValue + 1;
+            });
+            
+            newMatchButton.addEventListener('click', startNewMatch);
+            
+            setupInitialState();
+        });
+    </script>
+
+</body>
+</html>
