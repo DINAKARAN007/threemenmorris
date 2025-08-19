@@ -267,7 +267,7 @@
             let blackScore = 0, redScore = 0, winningScore = 10;
             let roundStarter = 1;
             let currentPlayer, boardState, stonesPlaced, isGameActive;
-            let selectedStoneIndex = -1; // NEW: To track selected stone for moving
+            let selectedStoneIndex = -1;
             let gameResetTimer = null;
             let isBotActive = false;
 
@@ -350,20 +350,16 @@
                 }
             }
 
-            // *** CORE LOGIC CHANGE: UNIFIED CLICK/TAP HANDLER ***
             function handlePointClick(event) {
                 if (!isGameActive || (isBotActive && currentPlayer === 1)) return;
                 const clickedIndex = parseInt(event.currentTarget.dataset.index);
 
-                // --- PLACEMENT PHASE ---
                 if (stonesPlaced < 6) {
                     if (boardState[clickedIndex] === 0) {
                         placeStone(clickedIndex);
                     }
                 } 
-                // --- MOVEMENT PHASE ---
                 else {
-                    // If no stone is selected yet
                     if (selectedStoneIndex === -1) {
                         if (boardState[clickedIndex] === currentPlayer) {
                             selectedStoneIndex = clickedIndex;
@@ -371,11 +367,8 @@
                             updateBoardUI();
                         }
                     } 
-                    // If a stone IS already selected
                     else {
-                        // If the clicked spot is a valid move target
                         if (boardState[clickedIndex] === 0 && isAdjacent(selectedStoneIndex, clickedIndex)) {
-                            // Move the stone
                             boardState[clickedIndex] = currentPlayer;
                             boardState[selectedStoneIndex] = 0;
                             selectedStoneIndex = -1;
@@ -386,7 +379,6 @@
                             }
                             switchPlayer();
                         } 
-                        // Otherwise, deselect the stone
                         else {
                             selectedStoneIndex = -1;
                             updateBoardUI();
@@ -474,7 +466,7 @@
                         const stone = document.createElement('div');
                         stone.classList.add('stone', player === 1 ? 'black' : 'red');
                         if (index === selectedStoneIndex) {
-                            stone.classList.add('selected'); // Highlight selected stone
+                            stone.classList.add('selected');
                         }
                         const row = Math.floor(index / 3), col = index % 3;
                         const padding = BOARD_SIZE * 0.06;
@@ -486,7 +478,9 @@
                 });
             }
             
-            // Bot Logic (No changes needed here)
+            // ===============================================
+            // +++ NEW ADVANCED BOT LOGIC STARTS HERE +++
+            // ===============================================
             function makeBotMove() {
                 if (!isGameActive) return;
                 if (stonesPlaced < 6) {
@@ -502,21 +496,46 @@
                     }
                 }
             }
+
             function findBestPlacement() {
                 const emptySpots = boardState.map((val, idx) => (val === 0 ? idx : null)).filter(val => val !== null);
-                for (const spot of emptySpots) { // Win
-                    const tempBoard = [...boardState]; tempBoard[spot] = 1;
-                    if (winPatterns.some(p => p.every(i => tempBoard[i] === 1))) return spot;
+
+                // 1. Win: Check if the bot can win in the next move
+                for (const spot of emptySpots) {
+                    const tempBoard = [...boardState]; tempBoard[spot] = 1; // Bot is player 1
+                    if (winPatterns.some(p => p.every(i => tempBoard[i] === 1))) {
+                        return spot;
+                    }
                 }
-                for (const spot of emptySpots) { // Block
-                    const tempBoard = [...boardState]; tempBoard[spot] = 2;
-                    if (winPatterns.some(p => p.every(i => tempBoard[i] === 2))) return spot;
+
+                // 2. Block: Check if the player can win, and block them
+                for (const spot of emptySpots) {
+                    const tempBoard = [...boardState]; tempBoard[spot] = 2; // Player is player 2
+                    if (winPatterns.some(p => p.every(i => tempBoard[i] === 2))) {
+                        return spot;
+                    }
                 }
+
+                // 3. Take Center: The center is the most strategic spot
+                if (boardState[4] === 0) {
+                    return 4;
+                }
+                
+                // 4. Take a Corner: Corners are better than edges
+                const corners = [0, 2, 6, 8].filter(i => boardState[i] === 0);
+                if (corners.length > 0) {
+                    return corners[Math.floor(Math.random() * corners.length)];
+                }
+
+                // 5. Fallback: Take any remaining spot
                 return emptySpots[Math.floor(Math.random() * emptySpots.length)];
             }
+
             function findBestMove() {
                 const botStones = boardState.map((val, idx) => (val === 1 ? idx : null)).filter(val => val !== null);
                 const possibleMoves = [];
+                
+                // Generate all possible moves for the bot
                 for (const from of botStones) {
                     for (let to = 0; to < 9; to++) {
                         if (boardState[to] === 0 && isAdjacent(from, to)) {
@@ -524,13 +543,61 @@
                         }
                     }
                 }
+
                 if (possibleMoves.length === 0) return {};
-                for (const move of possibleMoves) { // Win
-                    const tempBoard = [...boardState]; tempBoard[move.to] = 1; tempBoard[move.from] = 0;
-                    if (winPatterns.some(p => p.every(i => tempBoard[i] === 1))) return move;
+
+                // 1. Find a winning move
+                for (const move of possibleMoves) {
+                    const tempBoard = [...boardState];
+                    tempBoard[move.to] = 1; 
+                    tempBoard[move.from] = 0;
+                    if (winPatterns.some(p => p.every(i => tempBoard[i] === 1))) {
+                        return move;
+                    }
                 }
+
+                // 2. Find a move to block the opponent's win
+                const opponentThreats = [];
+                for (const pattern of winPatterns) {
+                    const values = pattern.map(i => boardState[i]);
+                    // If player has two stones and the third spot is empty, it's a threat
+                    if (values.filter(v => v === 2).length === 2 && values.filter(v => v === 0).length === 1) {
+                        const emptySpot = pattern.find(i => boardState[i] === 0);
+                        opponentThreats.push(emptySpot);
+                    }
+                }
+
+                if (opponentThreats.length > 0) {
+                    const blockingSpot = opponentThreats[0]; // The spot the bot needs to move to
+                    // Find a bot move that lands on the blocking spot
+                    for (const move of possibleMoves) {
+                        if (move.to === blockingSpot) {
+                            return move;
+                        }
+                    }
+                }
+
+                // 3. Create a threat (a two-in-a-row)
+                for (const move of possibleMoves) {
+                    const tempBoard = [...boardState];
+                    tempBoard[move.to] = 1;
+                    tempBoard[move.from] = 0;
+                    // Check if this move creates a new threat for the bot
+                    for (const pattern of winPatterns) {
+                        if (!pattern.includes(move.to)) continue; // Check only patterns involving the new move
+                        const values = pattern.map(i => tempBoard[i]);
+                        if (values.filter(v => v === 1).length === 2 && values.filter(v => v === 0).length === 1) {
+                            return move;
+                        }
+                    }
+                }
+
+                // 4. Fallback: If no strategic move, make a random valid move
                 return possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
             }
+            // ===============================================
+            // +++ NEW ADVANCED BOT LOGIC ENDS HERE +++
+            // ===============================================
             
             // Helper functions and event listeners
             function toggleScoreControls(enabled) {
