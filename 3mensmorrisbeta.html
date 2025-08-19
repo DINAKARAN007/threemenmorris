@@ -4,8 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Three Men's Morris</title>
+
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-3WSV6HLD3S"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-3WSV6HLD3S');
+    </script>
+
     <style>
-        /* விளையாட்டுக்கான CSS ஸ்டைல்கள் */
+        /* General Body Styles */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
@@ -14,9 +24,11 @@
             height: 100vh;
             background-color: #eef2f7;
             margin: 0;
-            overflow: hidden; 
+            overflow: hidden;
+            -webkit-tap-highlight-color: transparent;
         }
 
+        /* Main Game Container */
         .game-container {
             text-align: center;
             background-color: white;
@@ -25,19 +37,19 @@
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
             position: relative;
             z-index: 5;
-        }
-
-        /* --- புதியது: தலைப்புக்கான இணைப்பு ஸ்டைல்கள் --- */
-        #title-link {
-            text-decoration: none; /* அடிக்கோட்டை நீக்குதல் */
-            color: inherit; /* இயல்பான கருப்பு நிறம் */
-            cursor: pointer;
+            width: auto;
+            max-width: 500px;
         }
         
-        h1 {
-            margin-bottom: 20px;
-        }
+        /* Game Mode Selection */
+        #mode-selection h2 { margin-top: 0; }
+        .hidden { display: none !important; }
         
+        /* Title */
+        #title-link { text-decoration: none; color: inherit; cursor: pointer; }
+        h1 { margin-bottom: 20px; }
+        
+        /* Score Settings */
         .settings-container {
             margin-bottom: 20px;
             display: flex;
@@ -47,7 +59,6 @@
             font-size: 18px;
             font-weight: 500;
         }
-
         #winning-score-input {
             width: 60px;
             padding: 8px;
@@ -64,7 +75,6 @@
             -webkit-appearance: none;
             margin: 0;
         }
-
         .score-control {
             width: 35px;
             height: 35px;
@@ -78,12 +88,11 @@
             justify-content: center;
             align-items: center;
             padding-bottom: 4px; 
+            user-select: none;
         }
-        .score-control:disabled {
-            cursor: not-allowed;
-            opacity: 0.5;
-        }
+        .score-control:disabled { cursor: not-allowed; opacity: 0.5; }
         
+        /* Scoreboard */
         .scoreboard-container {
             display: flex;
             justify-content: space-around;
@@ -91,33 +100,19 @@
             font-size: 20px;
             font-weight: bold;
         }
-        .player-score {
-            padding: 10px 20px;
-            border-radius: 8px;
-        }
-        #black-player-score {
-            background-color: #f0f0f0;
-            border-left: 5px solid black;
-        }
-        #red-player-score {
-            background-color: #f0f0f0;
-            border-left: 5px solid #d92121;
-        }
+        .player-score { padding: 10px 20px; border-radius: 8px; }
+        #black-player-score { background-color: #f0f0f0; border-left: 5px solid black; }
+        #red-player-score { background-color: #f0f0f0; border-left: 5px solid #d92121; }
 
+        /* Game Board */
         .board-container {
             position: relative;
             width: 360px;
             height: 360px;
             margin: 20px auto;
+            touch-action: none;
         }
-
-        #board-lines {
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
-        }
-
+        #board-lines { position: absolute; top: 0; left: 0; z-index: 1; }
         .points-grid {
             position: absolute;
             top: 0;
@@ -129,9 +124,9 @@
             grid-template-rows: repeat(3, 1fr);
             z-index: 2;
         }
-
         .point { cursor: pointer; }
         
+        /* Stones / Coins */
         .stone {
             position: absolute;
             width: 50px;
@@ -141,96 +136,60 @@
             transform: translate(-50%, -50%); 
             z-index: 3;
             pointer-events: none;
+            transition: box-shadow 0.2s ease-in-out;
         }
-
+        .stone.selected {
+            box-shadow: 0 0 15px 5px #007bff; /* Highlight for selected stone */
+        }
         .black { background-color: #000000; }
         .red { background-color: #d92121; }
         
-        .stone.selected { box-shadow: 0 0 15px 5px #007bff; }
-
-        #status {
-            font-size: 24px;
-            margin-top: 20px;
-            height: 30px;
-            font-weight: bold;
-            color: #007bff;
-        }
-        
-        .buttons-container {
-            margin-top: 20px;
-        }
-
-        .game-button {
-            padding: 12px 25px;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            color: white;
-            margin: 0 10px;
-        }
-        
+        /* Status & Buttons */
+        #status { font-size: 24px; margin-top: 20px; height: 30px; font-weight: bold; color: #007bff; }
+        .buttons-container { margin-top: 20px; }
+        .game-button { padding: 12px 25px; font-size: 16px; cursor: pointer; border: none; border-radius: 5px; color: white; margin: 0 10px; }
         #newMatchButton { background-color: #4CAF50; }
 
+        /* Victory Overlay */
         #victory-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: rgba(0, 0, 0, 0.75);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            opacity: 0;
-            pointer-events: none;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; opacity: 0; pointer-events: none;
             transition: opacity 0.5s ease-in-out;
         }
-
-        #victory-overlay.visible {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
+        #victory-overlay.visible { opacity: 1; pointer-events: auto; }
         .victory-content {
-            text-align: center;
-            color: white;
-            transform: scale(0.5);
-            opacity: 0;
+            text-align: center; color: white;
+            transform: scale(0.5); opacity: 0;
             transition: all 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) 0.3s;
         }
-
-        #victory-overlay.visible .victory-content {
-            transform: scale(1);
-            opacity: 1;
-        }
-        
-        .trophy {
-            font-size: 150px;
-            line-height: 1;
-        }
-        
-        #victory-overlay.visible .trophy {
-             animation: trophy-animation 1s ease-out forwards;
-        }
-
-        #winner-message {
-            font-size: 3em;
-            margin: 20px 0;
-            text-shadow: 0 0 15px gold;
-        }
-        
-        #countdown-message {
-            font-size: 1.2em;
-            margin-top: 20px;
-            color: #f0f0f0;
-        }
+        #victory-overlay.visible .victory-content { transform: scale(1); opacity: 1; }
+        .trophy { font-size: 150px; line-height: 1; }
+        #victory-overlay.visible .trophy { animation: trophy-animation 1s ease-out forwards; }
+        #winner-message { font-size: 3em; margin: 20px 0; text-shadow: 0 0 15px gold; }
+        #countdown-message { font-size: 1.2em; margin-top: 20px; color: #f0f0f0; }
 
         @keyframes trophy-animation {
             0% { transform: translateY(100px) scale(0.5) rotate(-30deg); opacity: 0; }
             60% { transform: translateY(-20px) scale(1.1) rotate(10deg); opacity: 1; }
             100% { transform: translateY(0) scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        /* Mobile View Styles */
+        @media (max-width: 600px) {
+            .game-container {
+                padding: 15px; width: 95vw; height: 98vh;
+                display: flex; flex-direction: column; justify-content: center;
+            }
+            .board-container { width: 90vw; height: 90vw; max-width: 300px; max-height: 300px; }
+            .stone { width: 12vw; height: 12vw; max-width: 40px; max-height: 40px; }
+            h1 { font-size: 1.5em; margin-bottom: 10px; }
+            #status { font-size: 1.1em; margin-top: 15px; }
+            .game-button { padding: 10px 15px; font-size: 14px; }
+            .scoreboard-container { font-size: 16px; margin-bottom: 15px; }
+            .settings-container { font-size: 16px; margin-bottom: 15px; }
+            #winner-message { font-size: 2em; }
         }
     </style>
 </head>
@@ -238,35 +197,35 @@
 
     <div class="game-container">
         
-        <!-- --- மாற்றம்: தலைப்பு இப்போது ஒரு இணைப்பு --- -->
-        <a href="#" id="title-link">
-            <h1>Three Men's Morris</h1>
-        </a>
+        <div id="mode-selection">
+            <h2>Select Game Mode</h2>
+            <div class="buttons-container">
+                <button id="twoPlayerButton" class="game-button" style="background-color: #007bff;">Two Player</button>
+                <button id="botButton" class="game-button" style="background-color: #dc3545;">Play with Bot</button>
+            </div>
+        </div>
 
-        <div class="settings-container">
-            <label for="winning-score-input">Winning Score:</label>
-            <button id="decrease-score" class="score-control">-</button>
-            <input type="number" id="winning-score-input" value="10" min="1">
-            <button id="increase-score" class="score-control">+</button>
-        </div>
-        
-        <div class="scoreboard-container">
-            <div id="black-player-score" class="player-score">
-                Black: <span id="black-score">0</span>
+        <div id="game-area" class="hidden">
+            <a href="#" id="title-link"><h1>Three Men's Morris</h1></a>
+            <div class="settings-container">
+                <label for="winning-score-input">Winning Score:</label>
+                <button id="decrease-score" class="score-control">-</button>
+                <input type="number" id="winning-score-input" value="10" min="1">
+                <button id="increase-score" class="score-control">+</button>
             </div>
-            <div id="red-player-score" class="player-score">
-                Red: <span id="red-score">0</span>
+            <div class="scoreboard-container">
+                <div id="black-player-score" class="player-score">Black: <span id="black-score">0</span></div>
+                <div id="red-player-score" class="player-score">Red: <span id="red-score">0</span></div>
             </div>
-        </div>
-        
-        <div id="board-container" class="board-container">
-            <canvas id="board-lines" width="360" height="360"></canvas>
-            <div id="points-grid" class="points-grid"></div>
-            <div id="stones-container"></div>
-        </div>
-        <div id="status"></div>
-        <div class="buttons-container">
-             <button id="newMatchButton" class="game-button">New Game</button>
+            <div id="board-container" class="board-container">
+                <canvas id="board-lines"></canvas>
+                <div id="points-grid" class="points-grid"></div>
+                <div id="stones-container"></div>
+            </div>
+            <div id="status"></div>
+            <div class="buttons-container">
+                <button id="newMatchButton" class="game-button">New Game</button>
+            </div>
         </div>
     </div>
 
@@ -283,7 +242,11 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             // DOM Elements
-            const titleLink = document.getElementById('title-link'); // --- மாற்றம் ---
+            const modeSelection = document.getElementById('mode-selection');
+            const gameArea = document.getElementById('game-area');
+            const twoPlayerButton = document.getElementById('twoPlayerButton');
+            const botButton = document.getElementById('botButton');
+            const titleLink = document.getElementById('title-link');
             const winningScoreInput = document.getElementById('winning-score-input');
             const decreaseScoreButton = document.getElementById('decrease-score');
             const increaseScoreButton = document.getElementById('increase-score');
@@ -295,26 +258,32 @@
             const redScoreElement = document.getElementById('red-score');
             const canvas = document.getElementById('board-lines');
             const ctx = canvas.getContext('2d');
+            const boardContainer = document.getElementById('board-container');
             const victoryOverlay = document.getElementById('victory-overlay');
             const winnerMessage = document.getElementById('winner-message');
             const countdownMessage = document.getElementById('countdown-message');
 
-            const BOARD_SIZE = 360; 
-
+            let BOARD_SIZE;
             let blackScore = 0, redScore = 0, winningScore = 10;
             let roundStarter = 1;
-            let currentPlayer, boardState, stonesPlaced, selectedStoneIndex, isGameActive;
+            let currentPlayer, boardState, stonesPlaced, isGameActive;
+            let selectedStoneIndex = -1; // NEW: To track selected stone for moving
             let gameResetTimer = null;
+            let isBotActive = false;
 
             const winPatterns = [
                 [0, 1, 2], [3, 4, 5], [6, 7, 8],
                 [0, 3, 6], [1, 4, 7], [2, 5, 8]
             ];
+            
+            twoPlayerButton.addEventListener('click', () => startGame(false));
+            botButton.addEventListener('click', () => startGame(true));
 
-            function toggleScoreControls(enabled) {
-                winningScoreInput.disabled = !enabled;
-                decreaseScoreButton.disabled = !enabled;
-                increaseScoreButton.disabled = !enabled;
+            function startGame(botMode) {
+                isBotActive = botMode;
+                modeSelection.classList.add('hidden');
+                gameArea.classList.remove('hidden');
+                setupInitialState();
             }
 
             function initializeRound() {
@@ -323,52 +292,41 @@
                 stonesPlaced = 0;
                 selectedStoneIndex = -1;
                 isGameActive = true;
-                
                 toggleScoreControls(false);
-
-                const startingPlayerName = (currentPlayer === 1) ? 'Black' : 'Red';
-                updateStatus(`Player ${currentPlayer} (${startingPlayerName}) to Place`);
-                
+                victoryOverlay.classList.remove('visible');
+                const startingPlayerName = (currentPlayer === 1) ? (isBotActive ? 'Bot' : 'Black') : 'Red';
+                updateStatus(`Player ${startingPlayerName} to Place`);
                 updateBoardUI();
+                if (isBotActive && currentPlayer === 1) setTimeout(makeBotMove, 1000);
             }
             
             function startNewMatch() {
                 if(gameResetTimer) clearInterval(gameResetTimer);
-
-                winningScore = parseInt(winningScoreInput.value);
-                if (isNaN(winningScore) || winningScore < 1) {
-                    winningScore = 10;
-                    winningScoreInput.value = 10;
-                }
-                
+                winningScore = parseInt(winningScoreInput.value) || 10;
+                winningScoreInput.value = winningScore;
                 blackScore = 0;
                 redScore = 0;
                 roundStarter = 1;
                 updateScoreboard();
-                
-                victoryOverlay.classList.remove('visible');
                 initializeRound();
             }
-
+            
             function setupInitialState() {
-                blackScore = 0;
-                redScore = 0;
                 updateScoreboard();
                 drawBoardLines();
                 createClickPoints();
                 boardState = Array(9).fill(0);
                 updateBoardUI();
                 toggleScoreControls(true);
-                updateStatus('Set winning score and start a new game!');
+                updateStatus('Set score & start a new game!');
             }
             
-            function updateScoreboard() {
-                blackScoreElement.textContent = blackScore;
-                redScoreElement.textContent = redScore;
-            }
-
             function drawBoardLines() {
+                BOARD_SIZE = boardContainer.clientWidth;
+                canvas.width = BOARD_SIZE;
+                canvas.height = BOARD_SIZE;
                 const size = BOARD_SIZE;
+                if (size <= 0) return;
                 const padding = size * 0.06;
                 const innerSize = size - (padding * 2);
                 ctx.clearRect(0, 0, size, size);
@@ -376,10 +334,8 @@
                 ctx.lineWidth = 4;
                 ctx.strokeRect(padding, padding, innerSize, innerSize);
                 ctx.beginPath();
-                ctx.moveTo(size / 2, padding);
-                ctx.lineTo(size / 2, size - padding);
-                ctx.moveTo(padding, size / 2);
-                ctx.lineTo(size - padding, size / 2);
+                ctx.moveTo(size / 2, padding); ctx.lineTo(size / 2, size - padding);
+                ctx.moveTo(padding, size / 2); ctx.lineTo(size - padding, size / 2);
                 ctx.stroke();
             }
 
@@ -393,15 +349,51 @@
                     pointsGrid.appendChild(point);
                 }
             }
-            
+
+            // *** CORE LOGIC CHANGE: UNIFIED CLICK/TAP HANDLER ***
             function handlePointClick(event) {
-                if (!isGameActive) return;
+                if (!isGameActive || (isBotActive && currentPlayer === 1)) return;
                 const clickedIndex = parseInt(event.currentTarget.dataset.index);
 
+                // --- PLACEMENT PHASE ---
                 if (stonesPlaced < 6) {
-                    if (boardState[clickedIndex] === 0) placeStone(clickedIndex);
-                } else {
-                    handleMove(clickedIndex);
+                    if (boardState[clickedIndex] === 0) {
+                        placeStone(clickedIndex);
+                    }
+                } 
+                // --- MOVEMENT PHASE ---
+                else {
+                    // If no stone is selected yet
+                    if (selectedStoneIndex === -1) {
+                        if (boardState[clickedIndex] === currentPlayer) {
+                            selectedStoneIndex = clickedIndex;
+                            updateStatus('Select an empty adjacent spot');
+                            updateBoardUI();
+                        }
+                    } 
+                    // If a stone IS already selected
+                    else {
+                        // If the clicked spot is a valid move target
+                        if (boardState[clickedIndex] === 0 && isAdjacent(selectedStoneIndex, clickedIndex)) {
+                            // Move the stone
+                            boardState[clickedIndex] = currentPlayer;
+                            boardState[selectedStoneIndex] = 0;
+                            selectedStoneIndex = -1;
+                            updateBoardUI();
+                            if (checkWin()) {
+                                handleRoundWin();
+                                return;
+                            }
+                            switchPlayer();
+                        } 
+                        // Otherwise, deselect the stone
+                        else {
+                            selectedStoneIndex = -1;
+                            updateBoardUI();
+                            const playerName = (currentPlayer === 1) ? (isBotActive ? 'Bot' : 'Black') : 'Red';
+                            updateStatus(`Player ${playerName} to Move`);
+                        }
+                    }
                 }
             }
 
@@ -409,96 +401,45 @@
                 boardState[index] = currentPlayer;
                 stonesPlaced++;
                 updateBoardUI();
-
                 if (checkWin()) {
                     handleRoundWin();
                     return;
                 }
-
                 switchPlayer();
-                if (stonesPlaced < 6) {
-                    updateStatus(`Player ${currentPlayer === 1 ? 'Black' : 'Red'} to Place`);
-                } else {
-                    updateStatus(`Player ${currentPlayer === 1 ? 'Black' : 'Red'} to Move`);
-                }
-            }
-
-            function handleMove(index) {
-                if (selectedStoneIndex === -1) {
-                    if (boardState[index] === currentPlayer) {
-                        selectedStoneIndex = index;
-                        updateBoardUI();
-                        updateStatus('Select an empty adjacent spot');
-                    }
-                } else {
-                    if (boardState[index] === 0 && isAdjacent(selectedStoneIndex, index)) {
-                        boardState[index] = currentPlayer;
-                        boardState[selectedStoneIndex] = 0;
-                        selectedStoneIndex = -1;
-                        updateBoardUI();
-
-                        if (checkWin()) {
-                            handleRoundWin();
-                            return;
-                        }
-
-                        switchPlayer();
-                        updateStatus(`Player ${currentPlayer === 1 ? 'Black' : 'Red'} to Move`);
-                    } else {
-                        selectedStoneIndex = -1;
-                        updateBoardUI();
-                        updateStatus(`Player ${currentPlayer === 1 ? 'Black' : 'Red'} to Move`);
-                    }
-                }
             }
 
             function handleRoundWin() {
                 isGameActive = false;
-                const winnerName = currentPlayer === 1 ? 'Black' : 'Red';
-                
-                if (currentPlayer === 1) {
-                    blackScore++;
-                } else {
-                    redScore++;
-                }
+                const winnerName = (currentPlayer === 1) ? (isBotActive ? 'Bot' : 'Black') : 'Red';
+                if (currentPlayer === 1) blackScore++; else redScore++;
                 updateScoreboard();
-                
                 roundStarter = currentPlayer;
-
                 if (blackScore >= winningScore || redScore >= winningScore) {
                     showVictoryCelebration(winnerName);
                 } else {
                     updateStatus(`${winnerName} wins the round!`);
-                    setTimeout(() => {
-                        initializeRound();
-                    }, 2000);
+                    setTimeout(initializeRound, 2000);
                 }
             }
 
             function showVictoryCelebration(winnerName) {
-                winnerMessage.textContent = `${winnerName.toUpperCase()} IS THE GRAND WINNER!`;
+                winnerMessage.textContent = `${winnerName.toUpperCase()} IS THE WINNER!`;
                 victoryOverlay.classList.add('visible');
                 toggleScoreControls(true);
-
-                const duration = 3 * 1000;
-                const end = Date.now() + duration;
-
+                const duration = 3 * 1000, end = Date.now() + duration;
                 (function frame() {
                     if (Date.now() > end) return;
                     confetti({ particleCount: 2, angle: 60, spread: 55, origin: { x: 0 }, colors: ['#000000', '#d92121', '#ffffff'] });
                     confetti({ particleCount: 2, angle: 120, spread: 55, origin: { x: 1 }, colors: ['#000000', '#d92121', '#ffffff'] });
                     requestAnimationFrame(frame);
                 }());
-
                 let countdown = 5;
-                countdownMessage.textContent = `New game starts in ${countdown}...`;
-                
+                countdownMessage.textContent = `New game in ${countdown}...`;
                 gameResetTimer = setInterval(() => {
                     countdown--;
                     if (countdown > 0) {
-                        countdownMessage.textContent = `New game starts in ${countdown}...`;
+                        countdownMessage.textContent = `New game in ${countdown}...`;
                     } else {
-                        countdownMessage.textContent = `Starting...`;
                         clearInterval(gameResetTimer);
                         startNewMatch();
                     }
@@ -506,21 +447,24 @@
             }
             
             function isAdjacent(from, to) {
-                const fromRow = Math.floor(from / 3);
-                const fromCol = from % 3;
-                const toRow = Math.floor(to / 3);
-                const toCol = to % 3;
-                
+                const fromRow = Math.floor(from / 3), fromCol = from % 3;
+                const toRow = Math.floor(to / 3), toCol = to % 3;
                 return (fromRow === toRow && Math.abs(fromCol - toCol) === 1) ||
                        (fromCol === toCol && Math.abs(fromRow - toRow) === 1);
             }
 
             function switchPlayer() {
-                currentPlayer = currentPlayer === 1 ? 2 : 1;
+                currentPlayer = (currentPlayer === 1) ? 2 : 1;
+                const playerName = (currentPlayer === 1) ? (isBotActive ? 'Bot' : 'Black') : 'Red';
+                const action = (stonesPlaced < 6) ? 'Place' : 'Move';
+                updateStatus(`Player ${playerName} to ${action}`);
+                if (isBotActive && currentPlayer === 1 && isGameActive) {
+                    setTimeout(makeBotMove, 1000);
+                }
             }
 
             function checkWin() {
-                return winPatterns.some(pattern => pattern.every(index => boardState[index] === currentPlayer));
+                return winPatterns.some(p => p.every(index => boardState[index] === currentPlayer));
             }
 
             function updateBoardUI() {
@@ -528,11 +472,11 @@
                 boardState.forEach((player, index) => {
                     if (player !== 0) {
                         const stone = document.createElement('div');
-                        stone.classList.add('stone');
-                        stone.classList.add(player === 1 ? 'black' : 'red');
-                        if (index === selectedStoneIndex) stone.classList.add('selected');
-                        const row = Math.floor(index / 3);
-                        const col = index % 3;
+                        stone.classList.add('stone', player === 1 ? 'black' : 'red');
+                        if (index === selectedStoneIndex) {
+                            stone.classList.add('selected'); // Highlight selected stone
+                        }
+                        const row = Math.floor(index / 3), col = index % 3;
                         const padding = BOARD_SIZE * 0.06;
                         const step = (BOARD_SIZE - 2 * padding) / 2;
                         stone.style.left = `${padding + col * step}px`;
@@ -542,29 +486,80 @@
                 });
             }
             
-            function updateStatus(message) { statusElement.textContent = message; }
-            
-            // --- மாற்றம்: தலைப்பைக் கிளிக் செய்தால் ரீஃப்ரெஷ் செய்தல் ---
-            titleLink.addEventListener('click', (event) => {
-                event.preventDefault();
-                location.reload();
-            });
-
-            decreaseScoreButton.addEventListener('click', () => {
-                let currentValue = parseInt(winningScoreInput.value);
-                if (currentValue > 1) {
-                    winningScoreInput.value = currentValue - 1;
+            // Bot Logic (No changes needed here)
+            function makeBotMove() {
+                if (!isGameActive) return;
+                if (stonesPlaced < 6) {
+                    placeStone(findBestPlacement());
+                } else {
+                    const { from, to } = findBestMove();
+                    if (from !== undefined && to !== undefined) {
+                        boardState[to] = currentPlayer;
+                        boardState[from] = 0;
+                        updateBoardUI();
+                        if (checkWin()) { handleRoundWin(); return; }
+                        switchPlayer();
+                    }
                 }
-            });
-
-            increaseScoreButton.addEventListener('click', () => {
-                let currentValue = parseInt(winningScoreInput.value);
-                winningScoreInput.value = currentValue + 1;
-            });
+            }
+            function findBestPlacement() {
+                const emptySpots = boardState.map((val, idx) => (val === 0 ? idx : null)).filter(val => val !== null);
+                for (const spot of emptySpots) { // Win
+                    const tempBoard = [...boardState]; tempBoard[spot] = 1;
+                    if (winPatterns.some(p => p.every(i => tempBoard[i] === 1))) return spot;
+                }
+                for (const spot of emptySpots) { // Block
+                    const tempBoard = [...boardState]; tempBoard[spot] = 2;
+                    if (winPatterns.some(p => p.every(i => tempBoard[i] === 2))) return spot;
+                }
+                return emptySpots[Math.floor(Math.random() * emptySpots.length)];
+            }
+            function findBestMove() {
+                const botStones = boardState.map((val, idx) => (val === 1 ? idx : null)).filter(val => val !== null);
+                const possibleMoves = [];
+                for (const from of botStones) {
+                    for (let to = 0; to < 9; to++) {
+                        if (boardState[to] === 0 && isAdjacent(from, to)) {
+                            possibleMoves.push({ from, to });
+                        }
+                    }
+                }
+                if (possibleMoves.length === 0) return {};
+                for (const move of possibleMoves) { // Win
+                    const tempBoard = [...boardState]; tempBoard[move.to] = 1; tempBoard[move.from] = 0;
+                    if (winPatterns.some(p => p.every(i => tempBoard[i] === 1))) return move;
+                }
+                return possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+            }
             
+            // Helper functions and event listeners
+            function toggleScoreControls(enabled) {
+                winningScoreInput.disabled = !enabled;
+                decreaseScoreButton.disabled = !enabled;
+                increaseScoreButton.disabled = !enabled;
+            }
+            function updateScoreboard() {
+                blackScoreElement.textContent = blackScore;
+                redScoreElement.textContent = redScore;
+            }
+            function updateStatus(message) { statusElement.textContent = message; }
+            titleLink.addEventListener('click', (event) => { event.preventDefault(); location.reload(); });
+            decreaseScoreButton.addEventListener('click', () => {
+                let val = parseInt(winningScoreInput.value);
+                if (val > 1) winningScoreInput.value = val - 1;
+            });
+            increaseScoreButton.addEventListener('click', () => {
+                winningScoreInput.value = parseInt(winningScoreInput.value) + 1;
+            });
             newMatchButton.addEventListener('click', startNewMatch);
             
-            setupInitialState();
+            // Initial Setup
+            gameArea.classList.add('hidden');
+            modeSelection.classList.remove('hidden');
+            window.addEventListener('resize', () => {
+                drawBoardLines();
+                updateBoardUI();
+            });
         });
     </script>
 
